@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ppd:cos:schema:intake-event:v1",
+  "title": "PPD Chief of Staff intake event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "eventType", "eventId", "eventUpdateId", "requestId", "correlationId",
+    "actor", "source", "purpose", "payload", "payloadHash", "createdAt", "expiresAt",
+    "idempotencyKey", "adapter"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "ppd.cos.intake.v1" },
+    "eventType": { "enum": ["request.submitted", "space.added", "space.removed"] },
+    "eventId": { "type": "string", "pattern": "^evt_[a-f0-9]{32}$" },
+    "eventUpdateId": { "type": "string", "pattern": "^upd_[a-f0-9]{32}$" },
+    "requestId": { "type": "string", "pattern": "^req_[a-f0-9]{32}$" },
+    "correlationId": { "type": "string", "pattern": "^cor_[a-f0-9]{32}$" },
+    "actor": { "$ref": "#/$defs/actor" },
+    "source": { "$ref": "#/$defs/source" },
+    "purpose": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "payload": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["text"],
+          "properties": { "text": { "type": "string", "minLength": 1, "maxLength": 16384 } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["membershipEvent"],
+          "properties": { "membershipEvent": { "enum": ["space.added", "space.removed"] } }
+        }
+      ]
+    },
+    "payloadHash": { "$ref": "#/$defs/hash" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "idempotencyKey": { "$ref": "#/$defs/hash" },
+    "adapter": { "$ref": "#/$defs/adapter" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chatUserName", "email", "domainId", "type", "source"],
+      "properties": {
+        "chatUserName": { "type": "string", "pattern": "^users/[A-Za-z0-9._@-]+$" },
+        "email": { "type": ["string", "null"], "format": "email" },
+        "domainId": { "type": ["string", "null"] },
+        "type": { "const": "HUMAN" },
+        "source": { "const": "google_chat_interaction" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "spaceName", "spaceType", "channel", "threadName", "messageName"],
+      "properties": {
+        "platform": { "const": "google_chat" },
+        "spaceName": { "type": "string", "pattern": "^spaces/[A-Za-z0-9_-]+$" },
+        "spaceType": { "enum": ["DIRECT_MESSAGE", "SPACE", "GROUP_CHAT"] },
+        "channel": { "enum": ["dm", "shared"] },
+        "threadName": { "type": ["string", "null"] },
+        "messageName": { "type": ["string", "null"] }
+      }
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "ppd-google-chat-cos-adapter" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "ppd-google-chat-cos-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fail-closed Google Chat adapter scaffold for PPD's single Chief of Staff runtime.",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-branches=80 --test-coverage-functions=80 --test-coverage-lines=80 test/*.test.js",
+    "check:secrets": "node test/helpers/secret-scan.js",
+    "check": "npm run test:coverage && npm run check:secrets"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

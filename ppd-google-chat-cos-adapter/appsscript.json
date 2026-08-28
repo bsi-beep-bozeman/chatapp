@@ -1,0 +1,17 @@
+{
+  "timeZone": "Australia/Perth",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/script.external_request"
+  ],
+  "dependencies": {
+    "enabledAdvancedServices": [
+      {
+        "userSymbol": "Chat",
+        "serviceId": "chat",
+        "version": "v1"
+      }
+    ]
+  }
+}
