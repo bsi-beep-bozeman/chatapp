@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ppd:cos:schema:ingestion-result:v1",
+  "title": "PPD Chief of Staff ingestion result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "state"],
+  "properties": {
+    "schemaVersion": { "const": "ppd.cos.ingestion-result.v1" },
+    "state": { "enum": ["accepted", "duplicate", "rejected", "unavailable"] },
+    "receiptId": { "type": "string", "pattern": "^rcpt_[A-Za-z0-9_-]{1,128}$" },
+    "receivedAt": { "type": ["string", "null"], "format": "date-time" },
+    "firstReceivedAt": { "type": ["string", "null"], "format": "date-time" },
+    "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" },
+    "retryable": { "type": "boolean" }
+  },
+  "oneOf": [
+    {
+      "properties": { "state": { "const": "accepted" } },
+      "required": ["receiptId", "receivedAt"],
+      "not": { "anyOf": [{ "required": ["firstReceivedAt"] }, { "required": ["code"] }, { "required": ["retryable"] }] }
+    },
+    {
+      "properties": { "state": { "const": "duplicate" } },
+      "required": ["receiptId", "firstReceivedAt"],
+      "not": { "anyOf": [{ "required": ["receivedAt"] }, { "required": ["code"] }, { "required": ["retryable"] }] }
+    },
+    {
+      "properties": { "state": { "const": "rejected" } },
+      "required": ["code"],
+      "not": { "anyOf": [{ "required": ["receiptId"] }, { "required": ["receivedAt"] }, { "required": ["firstReceivedAt"] }, { "required": ["retryable"] }] }
+    },
+    {
+      "properties": { "state": { "const": "unavailable" } },
+      "required": ["code", "retryable"],
+      "not": { "anyOf": [{ "required": ["receiptId"] }, { "required": ["receivedAt"] }, { "required": ["firstReceivedAt"] }] }
+    }
+  ]
+}
