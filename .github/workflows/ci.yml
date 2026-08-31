@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chat-adapter:
+    name: Google Chat adapter
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Run adapter tests and secret scan
+        working-directory: ppd-google-chat-cos-adapter
+        run: npm run check
+
+  ingestion-service:
+    name: Ingestion service
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PPD_TEST_DATABASE_URL: postgresql://ppd_cos_local:synthetic-local-only@127.0.0.1:5432/ppd_cos_local
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ppd_cos_local
+          POSTGRES_USER: ppd_cos_local
+          POSTGRES_PASSWORD: synthetic-local-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ppd_cos_local -d ppd_cos_local"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ppd-cos-ingestion-service/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: ppd-cos-ingestion-service
+        run: npm ci
+
+      - name: Run type checks, tests, coverage, and secret scan
+        working-directory: ppd-cos-ingestion-service
+        run: npm run check
+
+      - name: Audit runtime dependencies
+        working-directory: ppd-cos-ingestion-service
+        run: npm run audit:runtime
+
+  container-build:
+    name: Container build
+    needs: ingestion-service
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Build the production image without publishing it
+        run: docker build --tag ppd-cos-ingestion-service:ci ppd-cos-ingestion-service
